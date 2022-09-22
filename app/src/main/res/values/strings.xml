@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Task Tracker</string>
+    <string name="no_task">No task today</string>
+    <string name="empty_task">empty task folder</string>
+    <string name="new_task">Add Task</string>
+    <string name="close">close</string>
+    <string name="task_title">Task title</string>
+    <string name="task_body">Description</string>
+    <string name="task_ends">Ends</string>
+    <string name="task_start">Starts</string>
+    <string name="task_start_time">Select task start time</string>
+    <string name="warning_for_time_selection">select the time before the start time</string>
+    <string name="warning_select_first_start_time">First select start time</string>
+</resources>
