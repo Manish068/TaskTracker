@@ -1,5 +1,6 @@
 package com.devopworld.tasktracker.screens
 
+import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +34,9 @@ fun NavGraphBuilder.MainScreen(navController: NavController, mainViewModel: Main
 
         val userName = entry.arguments?.getString("name") ?: ""
         val action = entry.arguments?.getString("action").toAction()
+
+        Log.d(TAG, "MainScreen: $userName")
+        Log.d(TAG, "MainScreen: $action")
 
         var myAction by rememberSaveable {
             mutableStateOf(NO_ACTION)

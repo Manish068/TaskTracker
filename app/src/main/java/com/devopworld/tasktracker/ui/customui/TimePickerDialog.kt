@@ -133,13 +133,10 @@ fun TimePickerDialog(
                         onClick = {
                             Log.d(
                                 TAG,
-                                "TimePickerDialog: ${CommonFunction.TodayDate()} ${
-                                    time.toString().substring(0, 5)
-                                } "
+                                "TimePickerDialog: ${CommonFunction.TodayDate()} $time "
                             )
 
-                            val dateTime =
-                                "${CommonFunction.TodayDate()} ${time.toString().substring(0, 5)}"
+                            val dateTime = "${CommonFunction.TodayDate()} $time:00"
                             if (fromEnd) {
                                 if (startTime > CommonFunction.dateToTimestamp(dateTime)!!) {
                                     Toast.makeText(
@@ -150,18 +147,30 @@ fun TimePickerDialog(
                                 } else {
                                     onDateTimeSave(
                                         CommonFunction.dateToTimestamp(dateTime)!!,
-                                        time.toString().substring(0, 5)
+                                        time.toString()
                                     )
                                     openDialog.value = false
                                     onDismiss(openDialog.value)
                                 }
                             } else {
-                                onDateTimeSave(
-                                    CommonFunction.dateToTimestamp(dateTime)!!,
-                                    time.toString().substring(0, 5)
-                                )
-                                openDialog.value = false
-                                onDismiss(openDialog.value)
+                                val currentTime = "${CommonFunction.TodayDate()} ${LocalTime.now()}"
+                                //check kre hai ki present time se selected time jada hona chahiye
+                                Log.d(TAG, "TimePickerDialog: $currentTime")
+                                val difference = CommonFunction.dateToTimestamp(dateTime)!!-CommonFunction.dateToTimestamp(currentTime)!!
+                                if (difference.toInt() < 0) {
+                                    Toast.makeText(
+                                        context,
+                                        R.string.warning_for_select_after_current_time,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }else{
+                                    onDateTimeSave(
+                                        CommonFunction.dateToTimestamp(dateTime)!!,
+                                        time.toString().substring(0, 5)
+                                    )
+                                    openDialog.value = false
+                                    onDismiss(openDialog.value)
+                                }
                             }
 
 

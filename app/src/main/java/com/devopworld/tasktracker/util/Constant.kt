@@ -5,4 +5,6 @@ object Constant {
     const val DATABASE_NAME="task_tracker_database"
 
     const val TASK_ARGUMENT_KEY="taskId"
+
+    var CURRENT_TIME = CommonFunction.getCurrentDateTimeInTimestamp()
 }

@@ -1,5 +1,6 @@
 package com.devopworld.tasktracker.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -7,15 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.devopworld.tasktracker.data.model.TaskData
 import com.devopworld.tasktracker.repository.TaskRepository
 import com.devopworld.tasktracker.util.Action
-import com.devopworld.tasktracker.util.CommonFunction
 import com.devopworld.tasktracker.util.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.util.*
 import javax.inject.Inject
 
 private const val TAG = "MainViewModel"
@@ -55,10 +53,10 @@ constructor(val taskRepository: TaskRepository) : ViewModel() {
         when (action) {
             Action.ADD -> AddTask()
             Action.UPDATE -> {
-
+                updateTask()
             }
             Action.DELETE -> {
-
+                deleteTask()
             }
             Action.DELETE_ALL -> {
                 // deleteAllTasks()
@@ -72,8 +70,47 @@ constructor(val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
-    fun updateTask(selectedTask:TaskData?){
+    private fun deleteTask(){
+        viewModelScope.launch {
+            val task = TaskData(
+                taskId =taskId.value,
+                taskTitle = taskTitle.value,
+                taskDescription = taskBody.value,
+                task_start_time = taskStartTime.value,
+                task_end_time = taskEndTime.value
+            )
 
+            taskRepository.deleteTask(task)
+        }
+    }
+
+   private fun updateTask(){
+        viewModelScope.launch(Dispatchers.IO) {
+            val task = TaskData(
+                taskId =taskId.value,
+                taskTitle = taskTitle.value,
+                taskDescription = taskBody.value,
+                task_start_time = taskStartTime.value,
+                task_end_time = taskEndTime.value
+            )
+            taskRepository.updateTask(task)
+        }
+    }
+
+    fun changeMutableValueOfTask(selectedTask: TaskData?) {
+        if (selectedTask != null) {
+            taskId.value = selectedTask.taskId
+            taskTitle.value = selectedTask.taskTitle
+            taskBody.value = selectedTask.taskDescription
+            taskStartTime.value = selectedTask.task_start_time
+            taskEndTime.value = selectedTask.task_end_time
+        } else {
+            taskId.value = 0
+            taskTitle.value = ""
+            taskBody.value = ""
+            taskStartTime.value = 0
+            taskEndTime.value = 0
+        }
     }
 
     private fun AddTask() {
@@ -89,5 +126,51 @@ constructor(val taskRepository: TaskRepository) : ViewModel() {
     }
 
 
+    private val _selectedTask = MutableStateFlow<TaskData?>(null)
+    val selectedTask: StateFlow<TaskData?> = _selectedTask
 
+
+    fun getSelected(taskId: Int) {
+            try {
+                viewModelScope.launch(Dispatchers.IO) {
+                    taskRepository.getSelectedTask(taskId).collect {
+                        _selectedTask.value = it
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "getSelected: ", e)
+            }
+
+    }
+
+    fun ModifyData(list:List<TaskData>): List<TaskData> {
+        val map = mutableMapOf<Long,TaskData>()
+        val incompleteList = mutableListOf<Long>()
+        val completeList = mutableListOf<Long>()
+        list.sortedBy {
+            it.task_start_time
+        }.forEach {
+            if(it.status =="INCOMPLETE"){
+                incompleteList.add(it.task_start_time)
+                incompleteList.sort()
+                map[it.task_start_time] = it
+            }else{
+                completeList.add(it.task_start_time)
+                map[it.task_start_time]=it
+            }
+        }
+
+        val value = map.toList().sortedByDescending { it.second.status.length }
+        val taskData = mutableListOf<TaskData>()
+        value.forEach {
+            taskData.add(it.second)
+        }
+        return taskData
+    }
+
+    fun updateTaskCompleted(taskData: TaskData){
+        viewModelScope.launch {
+            taskRepository.updateTask(taskData)
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package com.compose.widget.sample
 
+import android.util.Log
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
@@ -19,6 +20,7 @@ import com.compose.widget.picker.TimePicker
 import com.devopworld.tasktracker.ui.theme.mainBgColor
 import java.time.LocalTime
 
+private const val TAG = "Sample"
 @Composable
 fun BottomTimePicker(
     currentTime: LocalTime? = null,
@@ -49,6 +51,7 @@ fun BottomTimePicker(
                     )
                 ),
                 onTimeChanged = {
+                    Log.d(TAG, "BottomTimePicker: $it")
                     time = it
                 },
                 currentTime = time

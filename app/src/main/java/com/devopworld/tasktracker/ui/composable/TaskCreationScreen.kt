@@ -1,6 +1,5 @@
 package com.devopworld.tasktracker.ui.composable
 
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -22,15 +21,18 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.devopworld.tasktracker.Navigation.Screen
 import com.devopworld.tasktracker.R
+import com.devopworld.tasktracker.data.model.TaskData
 import com.devopworld.tasktracker.ui.customui.TimePickerDialog
 import com.devopworld.tasktracker.ui.theme.PrimaryTextColor
 import com.devopworld.tasktracker.ui.theme.fontTypography
 import com.devopworld.tasktracker.ui.theme.mainBgColor
 import com.devopworld.tasktracker.util.Action
+import com.devopworld.tasktracker.util.CommonFunction
 import com.devopworld.tasktracker.viewmodel.MainViewModel
 
 @Composable
 fun TaskCreationScreen(
+    selectedTask: TaskData?,
     mainViewModel: MainViewModel,
     navController: NavController,
     userName: String
@@ -49,26 +51,37 @@ fun TaskCreationScreen(
 
     Scaffold(
         topBar = {
-            TaskCreationAppBar()
+            TaskCreationAppBar(selectedTask, navigateToListScreen = {action ->
+                navController.navigate(Screen.TaskScreen.withArgs(userName, action))
+            })
         },
         content = {
             TaskCreateContent(
                 taskTitle = title,
                 description = body,
+                taskStartTime = CommonFunction.fromTimestamp(taskStartTime)!!,
+                taskEndTime = CommonFunction.fromTimestamp(taskEndTime)!!,
                 onTaskTitleChange = { title -> mainViewModel.taskTitle.value = title },
                 onTaskDescriptionChange = { description ->
                     mainViewModel.taskBody.value = description
                 },
+                onStartTimeChange = { startTime ->
+                    val dateTime = "${CommonFunction.TodayDate()} ${startTime}"
+                    mainViewModel.taskStartTime.value = CommonFunction.dateToTimestamp(dateTime)!!
+                },
+                onEndTimeChange = { endTime ->
+                    val dateTime = "${CommonFunction.TodayDate()} ${endTime}"
+                    mainViewModel.taskEndTime.value = CommonFunction.dateToTimestamp(dateTime)!!
+                },
                 mainViewModel = mainViewModel,
                 onCreateTaskClick = {
-                    Log.d(
-                        TAG, "TaskCreationScreen: Title $title \n" +
-                                " Description $body \n" +
-                                "StartTime $taskStartTime \n" +
-                                "EndTime $taskEndTime"
-                    )
-                    navController.navigate(Screen.TaskScreen.withArgs(userName, Action.ADD))
-                }
+                    if (selectedTask == null) {
+                        navController.navigate(Screen.TaskScreen.withArgs(userName, Action.ADD))
+                    } else {
+                        navController.navigate(Screen.TaskScreen.withArgs(userName, Action.UPDATE))
+                    }
+                },
+                selectedTask = selectedTask
             )
         }
     )
@@ -81,24 +94,25 @@ private const val TAG = "TaskCreationScreen"
 fun TaskCreateContent(
     onTaskTitleChange: (String) -> Unit,
     onTaskDescriptionChange: (String) -> Unit,
+    onStartTimeChange: (String) -> Unit,
+    onEndTimeChange: (String) -> Unit,
     description: String,
     taskTitle: String,
     mainViewModel: MainViewModel?,
-    onCreateTaskClick: () -> Unit
+    onCreateTaskClick: () -> Unit,
+    selectedTask: TaskData?,
+    taskEndTime: String,
+    taskStartTime: String
 ) {
 
-    var startTime by remember { mutableStateOf("") }
-    var endTime by remember { mutableStateOf("") }
 
-    Log.d(TAG, "TaskCreateContent: $startTime")
+    val buttonText = if (selectedTask == null) "Create task" else "Update task"
+
+
 
     var visible by remember { mutableStateOf(false) }
-    var fromStart by remember {
-        mutableStateOf(false)
-    }
-    var fromEnd by remember {
-        mutableStateOf(false)
-    }
+    var fromStart by remember { mutableStateOf(false) }
+    var fromEnd by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -115,6 +129,8 @@ fun TaskCreateContent(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
+
+
                 Text(
                     text = stringResource(id = R.string.task_title), style = TextStyle(
                         fontFamily = fontTypography,
@@ -147,7 +163,7 @@ fun TaskCreateContent(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row() {
+                Row {
                     Column(
                         modifier = Modifier
                             .padding(end = 5.dp)
@@ -174,9 +190,9 @@ fun TaskCreateContent(
                                 },
                             enabled = false,
                             singleLine = true,
-                            value = startTime,
+                            value = taskStartTime,
                             onValueChange = { taskStartTime ->
-                                startTime = taskStartTime
+                                onStartTimeChange(taskStartTime)
                             },
                             textStyle = TextStyle(
                                 color = PrimaryTextColor,
@@ -216,9 +232,9 @@ fun TaskCreateContent(
                                 },
                             singleLine = true,
                             enabled = false,
-                            value = endTime,
+                            value = taskEndTime,
                             onValueChange = { taskEndTime ->
-                                endTime = taskEndTime
+                                onEndTimeChange(taskEndTime)
                             },
                             textStyle = TextStyle(
                                 color = PrimaryTextColor,
@@ -233,7 +249,7 @@ fun TaskCreateContent(
                 }
 
                 if (visible) {
-                    if (startTime.isNotEmpty() && fromEnd) {
+                    if (taskStartTime.isNotEmpty() && fromEnd) {
                         TimePickerDialog(
                             mainViewModel!!,
                             fromStart,
@@ -244,10 +260,9 @@ fun TaskCreateContent(
                             onDateTimeSave = { timestamp, time ->
                                 if (fromStart) {
                                     mainViewModel.taskStartTime.value = timestamp
-                                    startTime = time
+
                                 } else {
                                     mainViewModel.taskEndTime.value = timestamp
-                                    endTime = time
                                 }
                             }
                         )
@@ -262,10 +277,9 @@ fun TaskCreateContent(
                             onDateTimeSave = { timestamp, time ->
                                 if (fromStart) {
                                     mainViewModel.taskStartTime.value = timestamp
-                                    startTime = time
+//
                                 } else {
                                     mainViewModel.taskEndTime.value = timestamp
-                                    endTime = time
                                 }
                             }
                         )
@@ -286,10 +300,14 @@ fun TaskCreateContent(
                 .height(60.dp)
                 .align(Alignment.BottomStart),
             elevation = ButtonDefaults.elevation(),
-            onClick = { onCreateTaskClick() },
+            onClick = {
+
+                onCreateTaskClick()
+
+            },
         ) {
             Text(
-                text = "Create task", style = TextStyle(
+                text = buttonText, style = TextStyle(
                     fontFamily = fontTypography,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp
@@ -314,8 +332,11 @@ fun previewTaskCreateContent() {
         description = "",
         taskTitle = "",
         mainViewModel = null,
-        onCreateTaskClick = {
-
-        }
+        onCreateTaskClick = {},
+        selectedTask = null,
+        taskEndTime = "",
+        taskStartTime = "",
+        onStartTimeChange = {},
+        onEndTimeChange = {}
     )
 }
