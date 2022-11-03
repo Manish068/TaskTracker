@@ -1,33 +1,37 @@
 package com.devopworld.tasktracker.Navigation
 
-import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.devopworld.tasktracker.ui.composable.TaskCreationScreen
-import com.devopworld.tasktracker.util.Constant.TASK_ARGUMENT_KEY
+import com.devopworld.tasktracker.util.Action
 import com.devopworld.tasktracker.viewmodel.MainViewModel
 
 private const val TAG = "CreateTaskScreen"
-fun NavGraphBuilder.CreateTaskScreen(navController: NavController, mainViewModel: MainViewModel) {
+fun NavGraphBuilder.CreateTaskScreen(
+    mainViewModel: MainViewModel,
+    onTaskAlterCompleted: (String, Action) -> Unit,
+    onBackButton: () -> Unit
+) {
     composable(
-        Screen.CreateTaskScreen.route + "/{name}/{${TASK_ARGUMENT_KEY}}",
+  "${Destinations.TaskDetail}/{${DestinationArgs.userName}}/{${DestinationArgs.TaskId}}",
         arguments = listOf(
-            navArgument("name") {
+            navArgument(DestinationArgs.userName) {
                 type = NavType.StringType },
-            navArgument(TASK_ARGUMENT_KEY) {
+            navArgument(DestinationArgs.TaskId) {
             type = NavType.IntType }
-        )
+        ),
+        deepLinks = listOf(navDeepLink {
+            uriPattern=DestinationDeepLink.TaskDetailPattern
+        })
     ) { entry ->
-        val taskId = entry.arguments!!.getInt(TASK_ARGUMENT_KEY)
-        val userName=entry.arguments!!.getString("name")!!
-
-        Log.d(TAG, "CreateTaskScreen: Task ID: $taskId")
+        val taskId = entry.arguments!!.getInt(DestinationArgs.TaskId)
+        val userName=entry.arguments!!.getString(DestinationArgs.userName)!!
 
         //if user open the task Creation screen from list of task item
         //then we need to get the selected data into selected MutableFlowState
@@ -35,10 +39,6 @@ fun NavGraphBuilder.CreateTaskScreen(navController: NavController, mainViewModel
 
         //here we take the selected data into collectAsState
         val selectedTask by mainViewModel.selectedTask.collectAsState()
-
-        Log.d(TAG, "CreateTaskScreen: ${selectedTask?.taskTitle}")
-        Log.d(TAG, "CreateTaskScreen: ${selectedTask?.task_start_time}")
-        Log.d(TAG, "CreateTaskScreen: ${selectedTask?.task_end_time}")
 
 
         //and here we check if selectedTask is not null then we update the data mutable values in viewModel
@@ -54,8 +54,9 @@ fun NavGraphBuilder.CreateTaskScreen(navController: NavController, mainViewModel
         TaskCreationScreen(
             selectedTask,
             mainViewModel,
-            navController,
-            userName
+            userName,
+            onBackButton =onBackButton,
+            onTaskAlterCompleted =onTaskAlterCompleted
         )
     }
 

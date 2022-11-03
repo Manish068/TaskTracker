@@ -5,7 +5,6 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.lifecycle.lifecycleScope
@@ -16,43 +15,42 @@ import com.devopworld.tasktracker.ui.theme.TaskTrackerTheme
 import com.devopworld.tasktracker.util.MainEvent
 import com.devopworld.tasktracker.viewmodel.MainViewModel
 import com.devopworld.tasktracker.viewmodel.PreferenceViewModel
-import dagger.hilt.android.AndroidEntryPoint
+import org.koin.androidx.viewmodel.ext.android.getViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 @ExperimentalMaterialApi
 @ExperimentalAnimationApi
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private lateinit var navController:NavHostController
-    private val viewModel by viewModels<PreferenceViewModel>()
-    val mainViewModel by viewModels<MainViewModel>()
-
+    private lateinit var navController: NavHostController
+    lateinit var  viewModel: PreferenceViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         setContent {
             TaskTrackerTheme {
+
                 // A surface container using the 'background' color from the theme
 //                FirstScreen()
                 navController = rememberNavController()
 
-                NavigationHost(navController,viewModel,mainViewModel)
-
+                NavigationHost(navController)
             }
         }
+
+
     }
 
     private fun getValueFromKey(key: String) {
         lifecycleScope.launchWhenResumed {
-            viewModel.getValueFromKey(key).collect{
-                updateViewOnEvent(it)
-            }
+            Log.d(TAG, "getValueFromKey: ${viewModel.getValueFromKey(key)}")
+
         }
     }
 
-    private fun setValueForKey(key :String, value: String) {
+    private fun setValueForKey(key: String, value: String) {
         lifecycleScope.launchWhenResumed {
-            viewModel.storeValueForKey(key,value)
-                .collect{
+            viewModel.storeValueForKey(key, value)
+                .collect {
                     updateViewOnEvent(it)
                 }
         }
@@ -65,7 +63,7 @@ class MainActivity : ComponentActivity() {
         when (event) {
             is MainEvent.NamedCachedSuccess -> {
                 // desired logic goes here
-                Log.d(TAG, " value stored")
+                Log.d(TAG, " value stored ")
             }
             is MainEvent.CachedNameFetchSuccess -> {
                 val name = event.name
@@ -89,12 +87,11 @@ class MainActivity : ComponentActivity() {
 
     private fun getCachedName() {
         lifecycleScope.launchWhenResumed {
-            viewModel.getCachedName().collect { event ->
+            viewModel.getCacheName().collect { event ->
                 updateViewOnEvent(event)
             }
         }
     }
-
 
 
 }

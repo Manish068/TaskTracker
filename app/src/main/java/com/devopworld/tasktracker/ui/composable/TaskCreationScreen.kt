@@ -1,5 +1,6 @@
 package com.devopworld.tasktracker.ui.composable
 
+import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -18,24 +19,35 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.devopworld.tasktracker.Navigation.Screen
 import com.devopworld.tasktracker.R
 import com.devopworld.tasktracker.data.model.TaskData
+import com.devopworld.tasktracker.data.model.TaskDetailActions
+import com.devopworld.tasktracker.permission.AlarmPermission
+import com.devopworld.tasktracker.ui.customui.AlarmPermissionDialog
+import com.devopworld.tasktracker.ui.customui.NotificationPermissionDialog
+import com.devopworld.tasktracker.ui.customui.RationalePermissionDialog
 import com.devopworld.tasktracker.ui.customui.TimePickerDialog
 import com.devopworld.tasktracker.ui.theme.PrimaryTextColor
 import com.devopworld.tasktracker.ui.theme.fontTypography
 import com.devopworld.tasktracker.ui.theme.mainBgColor
 import com.devopworld.tasktracker.util.Action
 import com.devopworld.tasktracker.util.CommonFunction
+import com.devopworld.tasktracker.util.rememberAlarmSelectionState
 import com.devopworld.tasktracker.viewmodel.MainViewModel
+import com.escodro.task.permission.PermissionStateFactory
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
+import org.koin.androidx.compose.get
 
 @Composable
 fun TaskCreationScreen(
     selectedTask: TaskData?,
     mainViewModel: MainViewModel,
-    navController: NavController,
-    userName: String
+    userName: String,
+    onTaskAlterCompleted: (String, Action) -> Unit,
+    onBackButton: () -> Unit
 ) {
     val title: String by mainViewModel.taskTitle
     val body: String by mainViewModel.taskBody
@@ -45,43 +57,54 @@ fun TaskCreationScreen(
     val context = LocalContext.current
 
     BackHandler {
-        navController.popBackStack()
-        navController.navigate(Screen.TaskScreen.withArgs(userName, Action.NO_ACTION))
+        onBackButton()
     }
+
+    val taskDetailActions = TaskDetailActions(
+        onTitleChange = { title -> mainViewModel.taskTitle.value = title },
+        onDescriptionChange = { desc -> mainViewModel.taskBody.value = desc },
+        onStartTimeChange = { startTime ->
+            val dateTime = "${CommonFunction.TodayDate()} ${startTime}"
+            mainViewModel.taskStartTime.value = CommonFunction.dateToTimestamp(dateTime)!!
+        },
+        onEndTimeChange = { endTime ->
+            val dateTime = "${CommonFunction.TodayDate()} ${endTime}"
+            mainViewModel.taskEndTime.value = CommonFunction.dateToTimestamp(dateTime)!!
+        },
+        onCreateTaskClick = {
+            if (selectedTask == null) {
+                onTaskAlterCompleted(userName, Action.ADD)
+            } else {
+                onTaskAlterCompleted(userName, Action.UPDATE)
+            }
+        }
+    )
+
+//    AlarmSelection(
+//        calendar = task.dueDate,
+//        interval = task.alarmInterval,
+//        onAlarmUpdate = actions.onAlarmUpdate,
+//        onIntervalSelect = actions.onIntervalSelect,
+//        hasAlarmPermission = actions.hasAlarmPermission,
+//        shouldCheckNotificationPermission = actions.shouldCheckNotificationPermission
+//    )
 
     Scaffold(
         topBar = {
-            TaskCreationAppBar(selectedTask, navigateToListScreen = {action ->
-                navController.navigate(Screen.TaskScreen.withArgs(userName, action))
+            TaskCreationAppBar(selectedTask, navigateToListScreen = { action ->
+                onTaskAlterCompleted(userName, action)
             })
         },
-        content = {
+        content = { paddingValues ->
             TaskCreateContent(
+                paddingValues = paddingValues,
                 taskTitle = title,
                 description = body,
                 taskStartTime = CommonFunction.fromTimestamp(taskStartTime)!!,
                 taskEndTime = CommonFunction.fromTimestamp(taskEndTime)!!,
-                onTaskTitleChange = { title -> mainViewModel.taskTitle.value = title },
-                onTaskDescriptionChange = { description ->
-                    mainViewModel.taskBody.value = description
-                },
-                onStartTimeChange = { startTime ->
-                    val dateTime = "${CommonFunction.TodayDate()} ${startTime}"
-                    mainViewModel.taskStartTime.value = CommonFunction.dateToTimestamp(dateTime)!!
-                },
-                onEndTimeChange = { endTime ->
-                    val dateTime = "${CommonFunction.TodayDate()} ${endTime}"
-                    mainViewModel.taskEndTime.value = CommonFunction.dateToTimestamp(dateTime)!!
-                },
                 mainViewModel = mainViewModel,
-                onCreateTaskClick = {
-                    if (selectedTask == null) {
-                        navController.navigate(Screen.TaskScreen.withArgs(userName, Action.ADD))
-                    } else {
-                        navController.navigate(Screen.TaskScreen.withArgs(userName, Action.UPDATE))
-                    }
-                },
-                selectedTask = selectedTask
+                selectedTask = selectedTask,
+                action = taskDetailActions
             )
         }
     )
@@ -90,24 +113,20 @@ fun TaskCreationScreen(
 
 private const val TAG = "TaskCreationScreen"
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun TaskCreateContent(
-    onTaskTitleChange: (String) -> Unit,
-    onTaskDescriptionChange: (String) -> Unit,
-    onStartTimeChange: (String) -> Unit,
-    onEndTimeChange: (String) -> Unit,
+private fun TaskCreateContent(
     description: String,
     taskTitle: String,
     mainViewModel: MainViewModel?,
-    onCreateTaskClick: () -> Unit,
     selectedTask: TaskData?,
     taskEndTime: String,
-    taskStartTime: String
+    taskStartTime: String,
+    action: TaskDetailActions,
+    paddingValues: PaddingValues,
 ) {
 
-
     val buttonText = if (selectedTask == null) "Create task" else "Update task"
-
 
 
     var visible by remember { mutableStateOf(false) }
@@ -117,6 +136,7 @@ fun TaskCreateContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .background(color = MaterialTheme.colors.mainBgColor)
             .padding(12.dp)
     ) {
@@ -127,40 +147,27 @@ fun TaskCreateContent(
                 .background(color = MaterialTheme.colors.mainBgColor)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(it)
             ) {
-
-
-                Text(
-                    text = stringResource(id = R.string.task_title), style = TextStyle(
-                        fontFamily = fontTypography,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
+                TaskInputLayout(
+                    stringResource(id = R.string.task_title),
+                    value=taskTitle,
+                    onValueChange = { title->
+                        action.onTitleChange(title)
+                    }
                 )
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = taskTitle,
-                    onValueChange = { title ->
-                        onTaskTitleChange(title)
-                    },
-                )
+
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(id = R.string.task_body),
-                    style = TextStyle(
-                        fontFamily = fontTypography,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
+                TaskInputLayout(
+                    stringResource(id = R.string.task_body),
+                    value=description,
+                    onValueChange = { description->
+                        action.onDescriptionChange(description)
+                    }
                 )
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = description,
-                    onValueChange = { description ->
-                        onTaskDescriptionChange(description)
-                    },
-                )
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row {
@@ -192,7 +199,7 @@ fun TaskCreateContent(
                             singleLine = true,
                             value = taskStartTime,
                             onValueChange = { taskStartTime ->
-                                onStartTimeChange(taskStartTime)
+                                action.onStartTimeChange(taskStartTime)
                             },
                             textStyle = TextStyle(
                                 color = PrimaryTextColor,
@@ -234,7 +241,7 @@ fun TaskCreateContent(
                             enabled = false,
                             value = taskEndTime,
                             onValueChange = { taskEndTime ->
-                                onEndTimeChange(taskEndTime)
+                                action.onEndTimeChange(taskEndTime)
                             },
                             textStyle = TextStyle(
                                 color = PrimaryTextColor,
@@ -245,7 +252,6 @@ fun TaskCreateContent(
                             )
                         )
                     }
-
                 }
 
                 if (visible) {
@@ -260,7 +266,6 @@ fun TaskCreateContent(
                             onDateTimeSave = { timestamp, time ->
                                 if (fromStart) {
                                     mainViewModel.taskStartTime.value = timestamp
-
                                 } else {
                                     mainViewModel.taskEndTime.value = timestamp
                                 }
@@ -277,7 +282,6 @@ fun TaskCreateContent(
                             onDateTimeSave = { timestamp, time ->
                                 if (fromStart) {
                                     mainViewModel.taskStartTime.value = timestamp
-//
                                 } else {
                                     mainViewModel.taskEndTime.value = timestamp
                                 }
@@ -290,7 +294,6 @@ fun TaskCreateContent(
                             Toast.LENGTH_SHORT
                         ).show()
                     }
-
                 }
             }
         }
@@ -301,9 +304,7 @@ fun TaskCreateContent(
                 .align(Alignment.BottomStart),
             elevation = ButtonDefaults.elevation(),
             onClick = {
-
-                onCreateTaskClick()
-
+                action.onCreateTaskClick()
             },
         ) {
             Text(
@@ -318,25 +319,44 @@ fun TaskCreateContent(
 
 }
 
+@Composable
+fun TaskInputLayout(
+    stringResource: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    Text(
+        text = stringResource, style = TextStyle(
+            fontFamily = fontTypography,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp
+        )
+    )
+    OutlinedTextField(
+        modifier = Modifier.fillMaxWidth(),
+        value = value,
+        onValueChange = { title ->
+            onValueChange(title)
+        },
+    )
+}
+
 
 @Preview(
     showBackground = true,
     device = Devices.NEXUS_6
 )
 @Composable
-fun previewTaskCreateContent() {
+fun PreviewTaskCreateContent() {
 
     TaskCreateContent(
-        onTaskTitleChange = {},
-        onTaskDescriptionChange = {},
         description = "",
         taskTitle = "",
         mainViewModel = null,
-        onCreateTaskClick = {},
         selectedTask = null,
         taskEndTime = "",
         taskStartTime = "",
-        onStartTimeChange = {},
-        onEndTimeChange = {}
+        action = TaskDetailActions({}, {}, {}, {}, {}),
+        paddingValues = PaddingValues(10.dp)
     )
 }

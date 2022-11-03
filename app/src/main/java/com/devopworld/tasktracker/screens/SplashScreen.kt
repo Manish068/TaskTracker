@@ -1,5 +1,6 @@
 package com.devopworld.tasktracker.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
@@ -29,16 +30,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
 import com.airbnb.lottie.compose.*
-import com.devopworld.tasktracker.Navigation.Screen
+import com.devopworld.tasktracker.Navigation.DestinationDeepLink
+import com.devopworld.tasktracker.Navigation.Destinations
 import com.devopworld.tasktracker.ui.theme.LightPrimaryColor
 import com.devopworld.tasktracker.ui.theme.PrimaryColor
 import com.devopworld.tasktracker.ui.theme.fontTypography
 import com.devopworld.tasktracker.util.Action
 import com.devopworld.tasktracker.util.MainEvent
 import com.devopworld.tasktracker.util.PreferenceConstant.USER_NAME
+import com.devopworld.tasktracker.viewmodel.DataStorePreference
 import com.devopworld.tasktracker.viewmodel.PreferenceViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -47,22 +50,28 @@ private const val TAG = "SplashScreen"
 
 @ExperimentalAnimationApi
 fun NavGraphBuilder.StartScreen(
-    navController: NavHostController,
     viewModel: PreferenceViewModel,
     nameSaved: Boolean,
     userName: String,
+    onSplashScreenComplete:(String, Action)-> Unit,
 ) {
-    composable(Screen.SplashScreen.route) {
-        SplashScreen(navController = navController, viewModel = viewModel, nameSaved,userName)
+    composable(Destinations.SplashScreen,
+    deepLinks = listOf(
+        navDeepLink {
+            uriPattern=DestinationDeepLink.SplashPattern
+        }
+    )
+    ) {
+        SplashScreen(viewModel = viewModel, nameSaved,userName,onSplashScreenComplete)
     }
 }
 
 @Composable
 fun SplashScreen(
-    navController: NavHostController,
     viewModel: PreferenceViewModel,
     nameSaved: Boolean,
     userName: String,
+    onNextButtonClick:(String,Action)-> Unit,
 ) {
    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -76,7 +85,7 @@ fun SplashScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                showAnimation(nameSaved, navController, userName)
+                ShowAnimation(nameSaved, onNextButtonClick, userName)
             }
         } else {
             var userName by rememberSaveable { mutableStateOf("") }
@@ -87,7 +96,7 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                showAnimation(nameSaved, navController, userName)
+                ShowAnimation(nameSaved, onNextButtonClick, userName)
 
             }
 
@@ -117,9 +126,11 @@ fun SplashScreen(
                 ) {
                     if (userName.isNotEmpty() && userName.isNotBlank()) {
                         coroutineScope.launch {
+                            Log.d(TAG, "SplashScreen: $userName")
                             viewModel.storeValueForKey(USER_NAME, userName)
                                 .collect {
-                                    updateViewOnEvent(it, navController, userName)
+                                    Log.d(TAG, "SplashScreen: $userName")
+                                    updateViewOnEvent(it, onNextButtonClick, userName)
                                 }
                         }
                     } else {
@@ -140,15 +151,15 @@ fun SplashScreen(
 
 
 @Composable
-fun showAnimation(nameSaved: Boolean, navController: NavHostController, userName: String) {
+fun ShowAnimation(nameSaved: Boolean, onNextButtonClick:(String, Action)-> Unit, userName: String) {
     // to control the lottie animation
     val compositionResult: LottieCompositionResult = rememberLottieComposition(
         LottieCompositionSpec
             .RawRes(com.devopworld.tasktracker.R.raw.tasks)
     )
 
-    var iteration = if (nameSaved) {
-        1;
+    val iteration = if (nameSaved) {
+        1
     } else {
         LottieConstants.IterateForever
     }
@@ -169,15 +180,16 @@ fun showAnimation(nameSaved: Boolean, navController: NavHostController, userName
     LottieAnimation(
         compositionResult.value,
         lottieAnimation,
-        modifier = Modifier.padding(bottom = 150.dp).size(150.dp)
+        modifier = Modifier
+            .padding(bottom = 150.dp)
+            .size(150.dp)
     )
 
     if (compositionResult.isComplete) {
         if (nameSaved) {
             LaunchedEffect(key1 = Unit) {
                 delay(3000L)
-                navController.popBackStack()
-                navController.navigate(Screen.TaskScreen.withArgs(userName,Action.NO_ACTION.name))
+                onNextButtonClick(userName,Action.NO_ACTION)
             }
         }
     }
@@ -187,14 +199,13 @@ fun showAnimation(nameSaved: Boolean, navController: NavHostController, userName
 
 private fun updateViewOnEvent(
     event: MainEvent,
-    navController: NavHostController,
+    onNextButtonClick:(String,Action)-> Unit,
     name: String?
 ) {
     when (event) {
         is MainEvent.NamedCachedSuccess -> {
             // desired logic goes here
-            navController.popBackStack()
-            navController.navigate(Screen.TaskScreen.withArgs(name!!,Action.NO_ACTION.name))
+            onNextButtonClick(name!!,Action.NO_ACTION)
         }
         is MainEvent.CachedNameFetchSuccess -> {
             // desired logic goes here

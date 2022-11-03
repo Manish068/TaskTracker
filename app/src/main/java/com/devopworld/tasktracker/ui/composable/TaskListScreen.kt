@@ -1,5 +1,6 @@
 package com.devopworld.tasktracker.ui.composable
 
+import android.annotation.SuppressLint
 import androidx.compose.material.Scaffold
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.SnackbarResult
@@ -14,12 +15,13 @@ import com.devopworld.tasktracker.util.Action
 import com.devopworld.tasktracker.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun TaskListScreen(
     action: Action,
     mainViewModel: MainViewModel,
     userName: String,
-    navController: NavController
+    onTaskDetailOpen: (String,Int) -> Unit
 ) {
 
     LaunchedEffect(key1 = action) {
@@ -53,17 +55,14 @@ fun TaskListScreen(
                 allTasks = allTasks,
                 mainViewModel = mainViewModel,
                 onClickItem = { taskId->
-                    navController.navigate(Screen.CreateTaskScreen.withArgs(userName,taskId))
+                    onTaskDetailOpen(userName,taskId)
                 }
             )
         },
         floatingActionButton = {
             FabButton(Icons.Filled.Add, nextButtonClick = {
-                navController.navigate(
-                    Screen.CreateTaskScreen.withArgs(userName, -1)
-                )
+                onTaskDetailOpen(userName,-1)
             })
-
         }
     )
 }

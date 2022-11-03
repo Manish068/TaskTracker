@@ -9,18 +9,14 @@ import com.devopworld.tasktracker.data.model.TaskData
 import com.devopworld.tasktracker.repository.TaskRepository
 import com.devopworld.tasktracker.util.Action
 import com.devopworld.tasktracker.util.RequestState
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 private const val TAG = "MainViewModel"
 
-@HiltViewModel
-class MainViewModel @Inject
-constructor(val taskRepository: TaskRepository) : ViewModel() {
+class MainViewModel(private val taskRepository: TaskRepository) : ViewModel() {
     val action: MutableState<Action> = mutableStateOf(Action.NO_ACTION)
 
     val taskId: MutableState<Int> = mutableStateOf(0)

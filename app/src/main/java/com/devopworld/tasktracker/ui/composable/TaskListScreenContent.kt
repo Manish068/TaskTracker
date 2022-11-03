@@ -31,7 +31,9 @@ import com.devopworld.tasktracker.ui.theme.mainBgColor
 import com.devopworld.tasktracker.util.CommonFunction
 import com.devopworld.tasktracker.util.RequestState
 import com.devopworld.tasktracker.util.TASKSTATUS
+import com.devopworld.tasktracker.viewmodel.AlarmViewModel
 import com.devopworld.tasktracker.viewmodel.MainViewModel
+import org.koin.androidx.compose.getViewModel
 import java.sql.Date
 import java.sql.Timestamp
 
@@ -104,7 +106,8 @@ fun TaskItem(
     index: Int,
     task: TaskData,
     mainViewModel: MainViewModel?,
-    onClickItem: (Int) -> Unit
+    onClickItem: (Int) -> Unit,
+    alarmViewModel:AlarmViewModel = getViewModel()
 ) {
 
     Box(
@@ -123,12 +126,11 @@ fun TaskItem(
             Text(text = task.createdDate.toString())
             Text(text = CommonFunction.fromTimestamp(task.task_start_time).toString())
             Text(text = CommonFunction.fromTimestamp(task.task_end_time).toString())
-            val milliseconds: Long = task.task_end_time - task.task_start_time
             Text(text = task.status)
-
-
-            val seconds = milliseconds.toInt() / 1000
-
+            val firstTask = index == 0 && task.status == TASKSTATUS.INCOMPLETE.toString()
+            if (firstTask){
+                alarmViewModel.setAlarm(task.taskId,task.task_end_time)
+            }
             Box(
                 contentAlignment = Alignment.Center,
             ) {
@@ -202,10 +204,11 @@ fun previewTaskItem() {
             Date(Timestamp(System.currentTimeMillis()).time),
             1663856100000, 1663859700000
         ),
-        mainViewModel = null
-    ) {
+        mainViewModel = null,
+        onClickItem = {
 
-    }
+        }
+    )
 }
 
 

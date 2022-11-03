@@ -24,10 +24,12 @@ import androidx.compose.ui.unit.sp
 import com.devopworld.tasktracker.data.model.TaskData
 import com.devopworld.tasktracker.util.CommonFunction
 import com.devopworld.tasktracker.util.TASKSTATUS
+import com.devopworld.tasktracker.viewmodel.AlarmViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.getViewModel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -197,32 +199,6 @@ fun Timer(
         }
 
     }
-//        Button(
-//            modifier = Modifier.wrapContentSize(),
-//            onClick = {
-//                if (currentTime <= 0L) {
-//                    currentTime = totalTime
-//                    isTimerRunning = true
-//                } else {
-//                    isTimerRunning = !isTimerRunning
-//                }
-//            },
-//            colors = ButtonDefaults.buttonColors(
-//                backgroundColor = if (!isTimerRunning || currentTime <= 0L) {
-//                    Color.Green
-//                } else {
-//                    Color.Red
-//                }
-//            )
-//        ) {
-//            Text(
-//                text =
-//                if (isTimerRunning && currentTime > 0L) "Stop"
-//                else if (!isTimerRunning && currentTime >= 0L) "Start"
-//                else "Restart"
-//            )
-//
-//        }
 
 }
 
