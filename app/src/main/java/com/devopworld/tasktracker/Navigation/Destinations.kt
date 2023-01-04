@@ -96,7 +96,7 @@ object DestinationDeepLink {
     /**
      * Deep link pattern to be registered in [Destinations.TaskDetail] composable.
      */
-    val TaskDetailPattern = "$BaseUri/task_detail/{${DestinationArgs.userName}}{${DestinationArgs.TaskId}}"
+    val TaskDetailPattern = "$BaseUri/{${DestinationArgs.userName}}?${DestinationArgs.TaskId}={${DestinationArgs.TaskId}}"
 
     /**
      * Deep link pattern to be registered in [Destinations.BottomSheet.Category] composable.
@@ -110,7 +110,7 @@ object DestinationDeepLink {
      * @return the [Destinations.TaskDetail] deep link with the argument set
      */
     fun getTaskDetailUri(taskId: Int,userName:String): Uri =
-        "$BaseUri/task_detail/{${DestinationArgs.userName}=$userName}{${DestinationArgs.TaskId}=$taskId}".toUri()
+        "$BaseUri/$userName?${DestinationArgs.TaskId}=$taskId".toUri()
 
     /**
      * Returns the [Destinations.Home] deep link with the argument set.

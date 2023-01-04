@@ -1,6 +1,8 @@
 package com.devopworld.tasktracker.Navigation
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.runtime.Composable
@@ -8,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.dialog
 import com.devopworld.tasktracker.screens.MainScreen
 import com.devopworld.tasktracker.screens.StartScreen
 import com.devopworld.tasktracker.util.Action
@@ -29,10 +32,11 @@ fun NavigationHost(
 ) {
 
 
-    var nameSaved: Boolean = false
-    var userName: String = ""
+    var nameSaved = false
+    var userName = ""
 
 
+    //runblock will block the main thread
     runBlocking {
         preferenceViewModel.getValueFromKey(USER_NAME).collect {
             nameSaved = it.name.isNotBlank() && it.name.isNotEmpty()
@@ -65,7 +69,16 @@ fun NavigationHost(
             onTaskAlterCompleted = actions.homeScreen
         )
 
+        dialog("tracker"){
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse(TrackerDeepLink)
+                `package` = context.packageName
+            }
+            context.startActivity(intent)
+        }
+
     }
+
 }
 
 internal data class Actions(val navController: NavHostController, val context: Context) {
@@ -108,4 +121,8 @@ internal data class Actions(val navController: NavHostController, val context: C
     val navigateUp: () -> Unit = {
         navController.navigateUp()
     }
+
 }
+private const val TrackerDeepLink = "app://com.devopworld.tasktracker"
+
+

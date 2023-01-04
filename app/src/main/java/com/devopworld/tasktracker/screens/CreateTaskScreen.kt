@@ -18,8 +18,7 @@ fun NavGraphBuilder.CreateTaskScreen(
     onTaskAlterCompleted: (String, Action) -> Unit,
     onBackButton: () -> Unit
 ) {
-    composable(
-  "${Destinations.TaskDetail}/{${DestinationArgs.userName}}/{${DestinationArgs.TaskId}}",
+    composable("${Destinations.TaskDetail}/{${DestinationArgs.userName}}/{${DestinationArgs.TaskId}}",
         arguments = listOf(
             navArgument(DestinationArgs.userName) {
                 type = NavType.StringType },

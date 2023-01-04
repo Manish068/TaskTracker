@@ -10,7 +10,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,7 +28,6 @@ import com.devopworld.tasktracker.ui.customui.Timer
 import com.devopworld.tasktracker.ui.theme.boardBackground
 import com.devopworld.tasktracker.ui.theme.fontTypography
 import com.devopworld.tasktracker.ui.theme.mainBgColor
-import com.devopworld.tasktracker.util.CommonFunction
 import com.devopworld.tasktracker.util.RequestState
 import com.devopworld.tasktracker.util.TASKSTATUS
 import com.devopworld.tasktracker.viewmodel.AlarmViewModel
@@ -37,8 +36,6 @@ import org.koin.androidx.compose.getViewModel
 import java.sql.Date
 import java.sql.Timestamp
 
-
-private const val TAG = "TaskListScreenContent"
 
 @Composable
 fun TaskListScreenContent(
@@ -62,7 +59,7 @@ fun HandleListContent(
     onClickItem: (Int) -> Unit
 ) {
     if (data.isEmpty()) {
-        emptyScreen()
+        EmptyScreen()
     } else {
         val modifiedData = mainViewModel.ModifyData(data)
         DisplayListContent(modifiedData, mainViewModel, onClickItem)
@@ -76,7 +73,6 @@ fun DisplayListContent(
     mainViewModel: MainViewModel,
     onClickItem: (Int) -> Unit
 ) {
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -107,7 +103,7 @@ fun TaskItem(
     task: TaskData,
     mainViewModel: MainViewModel?,
     onClickItem: (Int) -> Unit,
-    alarmViewModel:AlarmViewModel = getViewModel()
+    alarmViewModel: AlarmViewModel = getViewModel()
 ) {
 
     Box(
@@ -120,17 +116,30 @@ fun TaskItem(
                 onClickItem(task.taskId)
             },
     ) {
-        Column {
-            Text(text = task.taskTitle)
-            Text(text = task.taskDescription)
-            Text(text = task.createdDate.toString())
-            Text(text = CommonFunction.fromTimestamp(task.task_start_time).toString())
-            Text(text = CommonFunction.fromTimestamp(task.task_end_time).toString())
-            Text(text = task.status)
-            val firstTask = index == 0 && task.status == TASKSTATUS.INCOMPLETE.toString()
-            if (firstTask){
-                alarmViewModel.setAlarm(task.taskId,task.task_end_time)
-            }
+        Column() {
+            Text(
+                text = task.taskTitle, style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            )
+            Text(
+                text = task.taskDescription, style = TextStyle(
+                    fontWeight = FontWeight.Light,
+                    fontSize = 16.sp,
+                    color = Color.Gray
+                )
+            )
+        }
+        val firstTask = index == 0 && task.status == TASKSTATUS.INCOMPLETE.toString()
+        if (firstTask) {
+            alarmViewModel.setAlarm(task.taskId, task.task_end_time)
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
             Box(
                 contentAlignment = Alignment.Center,
             ) {
@@ -146,15 +155,13 @@ fun TaskItem(
                     }
                 )
             }
-
-
         }
     }
 }
 
 
 @Composable
-fun emptyScreen() {
+fun EmptyScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -192,7 +199,7 @@ fun emptyScreen() {
     device = Devices.NEXUS_6
 )
 @Composable
-fun previewTaskItem() {
+fun PreviewTaskItem() {
     TaskItem(
         0,
         task = TaskData(
@@ -202,7 +209,7 @@ fun previewTaskItem() {
                     " consectetur adipiscing elit. Sed odio libero," +
                     " semper at lectus non, luctus pellentesque magna.",
             Date(Timestamp(System.currentTimeMillis()).time),
-            1663856100000, 1663859700000
+            System.currentTimeMillis(), System.currentTimeMillis()
         ),
         mainViewModel = null,
         onClickItem = {

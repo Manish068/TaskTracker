@@ -48,7 +48,6 @@ fun Timer(
     onCompletedTask: () -> Unit
 ) {
     val firstTask = index == 0 && taskData.status == TASKSTATUS.INCOMPLETE.toString()
-    Log.d(TAG, "Timer: $firstTask")
     if (firstTask) {
 
         var currentTime by remember {
@@ -172,13 +171,13 @@ fun Timer(
                 Text(
                     text =
                     if (hours > 0) {
-                        "${CommonFunction.fillText(hours)}:${CommonFunction.fillText(minutes)}"
+                        "${CommonFunction.fillText(hours)}Hr\n${CommonFunction.fillText(minutes)}min"
                     } else {
                         "${CommonFunction.fillText(minutes)}:${CommonFunction.fillText(seconds)}"
                     },
-                    fontSize = 14.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.Black
                 )
 
                 if (isTimerRunning && totalTimeTimerRun > 0L)

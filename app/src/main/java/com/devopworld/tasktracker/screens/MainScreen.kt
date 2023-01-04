@@ -1,7 +1,6 @@
 package com.devopworld.tasktracker.screens
 
 import android.Manifest
-import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,8 +29,6 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import org.koin.androidx.compose.get
-
-private const val TAG = "MainScreen"
 
 @OptIn(ExperimentalPermissionsApi::class)
 @ExperimentalAnimationApi
@@ -62,11 +59,6 @@ fun NavGraphBuilder.MainScreen(
              },
             shouldCheckNotificationPermission = alarmPermission.shouldCheckNotificationPermission()
         )
-
-
-
-        Log.d(TAG, "MainScreen: $userName")
-        Log.d(TAG, "MainScreen: $action")
 
         var myAction by rememberSaveable {
             mutableStateOf(NO_ACTION)
